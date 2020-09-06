@@ -1,0 +1,8 @@
+#!/bin/bash
+echo "Executing rc.local . . . " >> /var/log/centos-customization.log
+if [ -e /root/ran_customization ]; then
+    exit
+else
+    /root/setup.sh &>> /var/log/centos-customization.log
+fi
+echo "Execution complete rc.local . . . " >> /var/log/centos-customization.log

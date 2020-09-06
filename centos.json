@@ -1,0 +1,80 @@
+{
+  "variables": {
+    "centos_ovf_template": "centos.xml.template"
+  },
+  "builders": [
+    {
+      "type": "vmware-iso",
+      "vm_name": "{{ user `vm_name` }}",
+      "guest_os_type": "centos8-64",
+      "version": "14",
+      "disk_size": "8192",
+      "boot_command": ["<up><wait><tab><wait> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg<enter><wait>"],
+      "boot_wait": "10s",
+      "headless": false,
+      "vnc_disable_password": true,
+      "iso_url": "{{ user `iso_url` }}",
+      "iso_checksum": "{{ user `iso_checksum` }}",
+      "iso_checksum_type": "{{ user `iso_checksum_type` }}",
+      "http_directory": "http",
+      "remote_type": "esx5",
+      "remote_host": "{{ user `builder_host` }}",
+      "remote_datastore": "{{ user `builder_host_datastore` }}",
+      "remote_username": "{{ user `builder_host_username` }}",
+      "remote_password": "{{ user `builder_host_password` }}",
+      "ssh_username": "{{ user `guest_username` }}",
+      "ssh_password": "{{ user `guest_password` }}",
+      "ssh_port": 22,
+      "ssh_timeout": "60m",
+      "format": "ovf",
+      "shutdown_command": "/sbin/shutdown -h now",
+      "shutdown_timeout": "1000s",
+      "vmx_data": {
+        "numvcpus": "{{ user `numvcpus` }}",
+        "memsize": "{{ user `ramsize` }}",
+        "ethernet0.networkName": "{{ user `builder_host_portgroup` }}",
+        "ethernet0.present": "TRUE",
+        "ethernet0.startConnected": "TRUE",
+        "ethernet0.virtualDev": "vmxnet3",
+        "ethernet0.addressType": "generated",
+        "ethernet0.wakeOnPcktRcv": "FALSE",
+        "annotation": "Version: {{ user `version` }}"
+      }
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "files/rc.local",
+      "destination": "/etc/rc.d/rc.local"
+    },
+    {
+      "type": "file",
+      "source": "files/setup.sh",
+      "destination": "/root/setup.sh"
+    },
+    {
+      "type": "shell",
+      "inline": ["chmod +x /etc/rc.d/rc.local"]
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/centos-settings.sh",
+        "scripts/centos-cleanup.sh"
+        
+      ]
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "shell-local",
+      "environment_vars": ["CENTOS_VERSION={{ user `version` }}", "CENTOS_APPLIANCE_NAME={{ user `vm_name` }}", "FINAL_CENTOS_APPLIANCE_NAME={{ user `vm_name` }}_{{user `version`}}", "CENTOS_OVF_TEMPLATE={{ user `centos_ovf_template` }}"],
+      "inline": [
+        "cd manual",
+        "./add_ovf_properties.sh"
+      ]
+    }
+  ]
+}
+

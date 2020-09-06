@@ -1,0 +1,100 @@
+{
+  "variables": {
+    "centos_ovf_template": "centos.xml.template",
+    "ovftool_deploy_vcenter": "vcsa.lab.local",
+    "ovftool_deploy_vcenter_username": "administrator@vsphere.local",
+    "ovftool_deploy_vcenter_password": "VMware1!",
+    "ovftool_deploy_datacenter": "Datacenter",
+    "ovftool_deploy_cluster": "WorkloadCluster",
+    "ovftool_deploy_vm_name": "PACKER-TEST-CentOS_Appliance",
+    "ovftool_deploy_vm_hostname": "centos.lab.local",
+    "ovftool_deploy_vm_ip_address": "10.0.0.71",
+    "ovftool_deploy_vm_prefix": "24",
+    "ovftool_deploy_vm_gateway": "10.0.0.1",
+    "ovftool_deploy_vm_dns": "10.0.0.1",
+    "ovftool_deploy_vm_dns_domain": "lab.local",
+    "ovftool_deploy_vm_root_password": "VMware1!",
+    "ovftool_deploy_vm_network": "DPortGroup-VMNetwork",
+    "ovftool_deploy_vm_datastore": "vsanDatastore"
+  },
+  "builders": [
+    {
+      "type": "vmware-iso",
+      "vm_name": "{{ user `vm_name` }}",
+      "guest_os_type": "centos8_64Guest",
+      "version": "13",
+      "disk_size": "8192",
+      "boot_command": ["<up><wait><tab><wait> text ks=http://{{ .HTTPIP }}:{{ .HTTPPort }}/ks.cfg<enter><wait>"],
+      "boot_wait": "10s",
+      "headless": false,
+      "vnc_disable_password": true,
+      "iso_url": "{{ user `iso_url` }}",
+      "iso_checksum": "{{ user `iso_checksum` }}",
+      "iso_checksum_type": "{{ user `iso_checksum_type` }}",
+      "http_directory": "http",
+      "remote_type": "esx5",
+      "remote_host": "{{ user `builder_host` }}",
+      "remote_datastore": "{{ user `builder_host_datastore` }}",
+      "remote_username": "{{ user `builder_host_username` }}",
+      "remote_password": "{{ user `builder_host_password` }}",
+      "ssh_username": "{{ user `guest_username` }}",
+      "ssh_password": "{{ user `guest_password` }}",
+      "ssh_port": 22,
+      "ssh_timeout": "60m",
+      "format": "ovf",
+      "shutdown_command": "/sbin/shutdown -h now",
+      "shutdown_timeout": "1000s",
+      "vmx_data": {
+        "numvcpus": "{{ user `numvcpus` }}",
+        "memsize": "{{ user `ramsize` }}",
+        "ethernet0.networkName": "{{ user `builder_host_portgroup` }}",
+        "ethernet0.present": "TRUE",
+        "ethernet0.startConnected": "TRUE",
+        "ethernet0.virtualDev": "vmxnet3",
+        "ethernet0.addressType": "generated",
+        "ethernet0.wakeOnPcktRcv": "FALSE",
+        "annotation": "Version: {{ user `version` }}"
+      }
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "file",
+      "source": "files/rc.local",
+      "destination": "/etc/rc.d/rc.local"
+    },
+    {
+      "type": "file",
+      "source": "files/setup.sh",
+      "destination": "/root/setup.sh"
+    },
+    {
+      "type": "shell",
+      "inline": ["chmod +x /etc/rc.d/rc.local"]
+    },
+    {
+      "type": "shell",
+      "scripts": [
+        "scripts/centos-cleanup.sh",
+        "scripts/centos-settings.sh"
+      ]
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "shell-local",
+      "environment_vars": ["CENTOS_VERSION={{ user `version` }}", "CENTOS_APPLIANCE_NAME={{ user `vm_name` }}", "FINAL_CENTOS_APPLIANCE_NAME={{ user `vm_name` }}_{{user `version`}}", "CENTOS_OVF_TEMPLATE={{ user `centos_ovf_template` }}"],
+      "inline": [
+        "cd manual",
+        "./add_ovf_properties.sh"
+      ]
+    },
+    {
+      "type": "shell-local",
+      "inline": [
+        "ovftool --noSSLVerify --overwrite --powerOn --name={{ user `ovftool_deploy_vm_name` }} --net:'VM Network={{ user `ovftool_deploy_vm_network` }}' --datastore={{ user `ovftool_deploy_vm_datastore` }} --prop:guestinfo.hostname={{ user `ovftool_deploy_vm_hostname` }} --prop:guestinfo.ipaddress={{ user `ovftool_deploy_vm_ip_address` }} --prop:guestinfo.netmask={{ user `ovftool_deploy_vm_prefix` }} --prop:guestinfo.gateway={{ user `ovftool_deploy_vm_gateway` }} --prop:guestinfo.dns={{ user `ovftool_deploy_vm_dns` }} --prop:guestinfo.domain={{ user `ovftool_deploy_vm_dns_domain` }} --prop:guestinfo.root_password={{ user `vm_ovftool_deploy_root_password` }} --prop:guestinfo.debug=True output-vmware-iso/{{ user `vm_name` }}_{{user `version`}}.ova 'vi://{{ user `ovftool_deploy_vcenter_username` }}:{{ user `ovftool_deploy_vcenter_password` }}@{{ user `ovftool_deploy_vcenter` }}/{{ user `ovftool_deploy_datacenter` }}/host/{{ user `ovftool_deploy_cluster` }}/'"
+      ]
+    }
+  ]
+}
+

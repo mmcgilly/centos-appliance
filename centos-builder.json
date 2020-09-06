@@ -1,0 +1,8 @@
+{
+  "builder_host": "192.168.0.100",
+  "builder_host_username": "root",
+  "builder_host_password": "VMware1!",
+  "builder_host_datastore": "datastore",
+  "builder_host_portgroup": "VM Network"
+}
+
