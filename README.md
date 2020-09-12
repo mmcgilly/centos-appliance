@@ -46,6 +46,15 @@ Step 2 - Edit the `centos-builder.json` file to configure the vSphere endpoint f
   "builder_host_portgroup": "VM Network"
 }
 ```
+Also edit the `centos.json` file to add your vSphere endpoint so the packer VM can be unregistered after the build.
+```
+"variables": {
+    "centos_ovf_template": "centos.xml.template",
+    "ovftool_deploy_vcenter": "vcsa.lab.local",
+    "ovftool_deploy_vcenter_username": "administrator@vsphere.local",
+    "ovftool_deploy_vcenter_password": "VMware1!"
+  }
+```
 
 **Note:** If you need to change the initial root password on the CentOS appliance, take a look at `centos-version.json` and `http/ks.cfg`.
 
