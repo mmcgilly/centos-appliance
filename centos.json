@@ -1,6 +1,9 @@
 {
   "variables": {
-    "centos_ovf_template": "centos.xml.template"
+    "centos_ovf_template": "centos.xml.template",
+    "ovftool_deploy_vcenter": "vcsa.lab.local",
+    "ovftool_deploy_vcenter_username": "administrator@vsphere.local",
+    "ovftool_deploy_vcenter_password": "VMware1!"
   },
   "builders": [
     {
@@ -73,6 +76,12 @@
       "inline": [
         "cd manual",
         "./add_ovf_properties.sh"
+      ]
+    },
+    {
+      "type": "shell-local",
+      "inline": [
+        "pwsh -F unregister_vm.ps1 {{ user `ovftool_deploy_vcenter` }} {{ user `ovftool_deploy_vcenter_username` }} {{ user `ovftool_deploy_vcenter_password` }} {{ user `vm_name` }}"
       ]
     }
   ]
